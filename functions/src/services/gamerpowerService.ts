@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+
 import { GiveawaySchema } from '../models/giveaway';
 
 const API_URL = 'https://www.gamerpower.com/api/giveaways';
