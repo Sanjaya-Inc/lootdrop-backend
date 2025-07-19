@@ -1,32 +1,44 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import * as admin from "firebase-admin";
+import { getGiveaways } from "./services/gamerpowerService";
+import { getExistingIds, batchCreate } from "./repositories/giveawayRepository";
+import { findUsersToNotifyForGiveaway } from "./repositories/userRepository";
+import { sendBatchNotifications } from "./services/notificationService";
+import { Giveaway } from "./models/giveaway";
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
-import * as logger from "firebase-functions/logger";
+admin.initializeApp();
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+export const checkAndNotify = onSchedule("every 24 hours", async (event) => {
+    console.log("Checking for new giveaways...");
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({maxInstances: 10});
+    const giveaways = await getGiveaways();
+    if (giveaways.length === 0) {
+        console.log("No giveaways found.");
+        return;
+    }
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    const giveawayIds = giveaways.map((g) => g.id);
+    const existingIds = await getExistingIds(giveawayIds);
+    const newGiveaways = giveaways.filter((g) => !existingIds.includes(g.id));
+
+    if (newGiveaways.length > 0) {
+        console.log(`Found ${newGiveaways.length} new giveaways.`);
+        await batchCreate(newGiveaways);
+
+        for (const giveaway of newGiveaways) {
+            const usersToNotify = await findUsersToNotifyForGiveaway(giveaway as Giveaway);
+            const fcmTokens = usersToNotify.flatMap(user => user.fcmTokens);
+
+            if (fcmTokens.length > 0) {
+                const title = "New Giveaway!";
+                const body = `A new giveaway has been added: ${giveaway.title}`;
+                await sendBatchNotifications(fcmTokens, title, body);
+            }
+        }
+
+    } else {
+        console.log("No new giveaways.");
+    }
+});
+
+export * from "./api/updatePreferences";
