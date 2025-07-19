@@ -1,44 +1,45 @@
-import { onSchedule } from "firebase-functions/v2/scheduler";
+import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
-import { getGiveaways } from "./services/gamerpowerService";
-import { getExistingIds, batchCreate } from "./repositories/giveawayRepository";
-import { findUsersToNotifyForGiveaway } from "./repositories/userRepository";
-import { sendBatchNotifications } from "./services/notificationService";
-import { Giveaway } from "./models/giveaway";
+import {getGiveaways} from "./services/gamerpowerService";
+import {getExistingIds, batchCreate} from "./repositories/giveawayRepository";
+import {findUsersToNotifyForGiveaway} from "./repositories/userRepository";
+import {sendBatchNotifications} from "./services/notificationService";
+import {Giveaway} from "./models/giveaway";
 
 admin.initializeApp();
 
 export const checkAndNotify = onSchedule("every 24 hours", async (event) => {
-    console.log("Checking for new giveaways...");
+  console.log("Checking for new giveaways...");
 
-    const giveaways = await getGiveaways();
-    if (giveaways.length === 0) {
-        console.log("No giveaways found.");
-        return;
+  const giveaways = await getGiveaways();
+  if (giveaways.length === 0) {
+    console.log("No giveaways found.");
+    return;
+  }
+
+  const giveawayIds = giveaways.map((g) => g.id);
+  const existingIds = await getExistingIds(giveawayIds);
+  const newGiveaways = giveaways.filter((g) => !existingIds.includes(g.id));
+
+  if (newGiveaways.length > 0) {
+    console.log(`Found ${newGiveaways.length} new giveaways.`);
+    await batchCreate(newGiveaways);
+
+    for (const giveaway of newGiveaways) {
+      const usersToNotify = await findUsersToNotifyForGiveaway(
+          giveaway as Giveaway
+      );
+      const fcmTokens = usersToNotify.flatMap((user) => user.fcmTokens);
+
+      if (fcmTokens.length > 0) {
+        const title = "New Giveaway!";
+        const body = `A new giveaway has been added: ${giveaway.title}`;
+        await sendBatchNotifications(fcmTokens, title, body);
+      }
     }
-
-    const giveawayIds = giveaways.map((g) => g.id);
-    const existingIds = await getExistingIds(giveawayIds);
-    const newGiveaways = giveaways.filter((g) => !existingIds.includes(g.id));
-
-    if (newGiveaways.length > 0) {
-        console.log(`Found ${newGiveaways.length} new giveaways.`);
-        await batchCreate(newGiveaways);
-
-        for (const giveaway of newGiveaways) {
-            const usersToNotify = await findUsersToNotifyForGiveaway(giveaway as Giveaway);
-            const fcmTokens = usersToNotify.flatMap(user => user.fcmTokens);
-
-            if (fcmTokens.length > 0) {
-                const title = "New Giveaway!";
-                const body = `A new giveaway has been added: ${giveaway.title}`;
-                await sendBatchNotifications(fcmTokens, title, body);
-            }
-        }
-
-    } else {
-        console.log("No new giveaways.");
-    }
+  } else {
+    console.log("No new giveaways.");
+  }
 });
 
 export * from "./api/updatePreferences";
