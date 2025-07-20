@@ -8,3 +8,9 @@ typings/
 # Node.js dependency directory
 node_modules/
 *.local
+# Ignore compiled JavaScript files
+*.js
+*.js.map
+# Or ignore the build output directory
+dist/
+build/

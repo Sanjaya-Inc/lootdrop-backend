@@ -68,3 +68,9 @@ node_modules/
 # dataconnect generated files
 .dataconnect
 /.idea/
+# Ignore compiled JavaScript files
+*.js
+*.js.map
+# Or ignore the build output directory
+dist/
+build/
