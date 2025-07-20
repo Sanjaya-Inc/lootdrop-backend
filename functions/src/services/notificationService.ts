@@ -25,6 +25,6 @@ export const sendBatchNotifications = async (
   }));
 
   if (messages.length > 0) {
-    await messaging().sendAll(messages);
+    await messaging().sendEach(messages);
   }
 };
