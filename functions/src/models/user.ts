@@ -1,5 +1,5 @@
 
-import { z } from 'zod';
+import { z } from "zod";
 
 export const UserSchema = z.object({
   fcmTokens: z.array(z.string()),
