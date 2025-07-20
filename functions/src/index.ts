@@ -43,3 +43,5 @@ export const checkAndNotify = onSchedule("every 24 hours", async () => {
 });
 
 export * from "./api/updatePreferences";
+export * from "./api/getGiveaways";
+export * from "./api/getPreferences";
