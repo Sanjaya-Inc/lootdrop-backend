@@ -1,7 +1,7 @@
 import {getFirestore} from "../config/firebase";
 import {User} from "../models/user";
 import {Giveaway} from "../models/giveaway";
-import {QueryDocumentSnapshot} from "firebase-admin/firestore";
+import {QueryDocumentSnapshot, Query} from "firebase-admin/firestore";
 
 const db = getFirestore();
 const usersCollection = db.collection("users");
@@ -18,7 +18,7 @@ export const getAllFcmTokens = async (): Promise<string[]> => {
 
 export const findUsersToNotifyForGiveaway = async (
   giveaway: Giveaway): Promise<User[]> => {
-  let query: FirebaseFirestore.Query = usersCollection;
+  let query: Query = usersCollection;
 
   const platforms = giveaway.platforms.split(", ");
   if (platforms.length > 0) {

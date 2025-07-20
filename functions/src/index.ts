@@ -8,7 +8,7 @@ import {Giveaway} from "./models/giveaway";
 
 initializeFirebase();
 
-export const checkAndNotify = onSchedule("every 24 hours", async (event) => {
+export const checkAndNotify = onSchedule("every 24 hours", async () => {
   console.log("Checking for new giveaways...");
 
   const giveaways = await getGiveaways();
