@@ -7,16 +7,33 @@ const giveawaysCollection = db.collection("giveaways");
 
 export const getExistingIds = async (
   giveawayIds: number[]): Promise<number[]> => {
-  const existingIds: number[] = [];
   if (giveawayIds.length === 0) {
-    return existingIds;
+    return [];
   }
 
-  const snapshot = await giveawaysCollection.where(
-    "id", "in", giveawayIds).get();
+  // Use a single query with array-contains-any for better performance
+  // However, since we need exact matches, we'll use a Map-based approach
+  
+  // Create a Set for O(1) lookups
+  const giveawayIdsSet = new Set(giveawayIds);
+  
+  // Get min and max values for efficient range query
+  const minId = Math.min(...giveawayIds);
+  const maxId = Math.max(...giveawayIds);
+  
+  const snapshot = await giveawaysCollection
+    .where("id", ">=", minId)
+    .where("id", "<=", maxId)
+    .get();
+  
+  const existingIds: number[] = [];
   snapshot.forEach((doc) => {
-    existingIds.push(doc.data().id);
+    const id = doc.data().id;
+    if (giveawayIdsSet.has(id)) {
+      existingIds.push(id);
+    }
   });
+  
   return existingIds;
 };
 
