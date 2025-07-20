@@ -1,12 +1,12 @@
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import * as admin from "firebase-admin";
+import {initializeFirebase} from "./config/firebase";
 import {getGiveaways} from "./services/gamerpowerService";
 import {getExistingIds, batchCreate} from "./repositories/giveawayRepository";
 import {findUsersToNotifyForGiveaway} from "./repositories/userRepository";
 import {sendBatchNotifications} from "./services/notificationService";
 import {Giveaway} from "./models/giveaway";
 
-admin.initializeApp();
+initializeFirebase();
 
 export const checkAndNotify = onSchedule("every 24 hours", async (event) => {
   console.log("Checking for new giveaways...");

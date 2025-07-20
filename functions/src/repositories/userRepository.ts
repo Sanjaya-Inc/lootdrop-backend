@@ -1,13 +1,14 @@
-import {firestore} from "firebase-admin";
+import {getFirestore} from "../config/firebase";
 import {User} from "../models/user";
 import {Giveaway} from "../models/giveaway";
+import {QueryDocumentSnapshot} from "firebase-admin/firestore";
 
-const db = firestore();
+const db = getFirestore();
 const usersCollection = db.collection("users");
 
 export const getUsers = async (): Promise<User[]> => {
   const snapshot = await usersCollection.get();
-  return snapshot.docs.map((doc) => doc.data() as User);
+  return snapshot.docs.map((doc: QueryDocumentSnapshot) => doc.data() as User);
 };
 
 export const getAllFcmTokens = async (): Promise<string[]> => {
@@ -17,7 +18,7 @@ export const getAllFcmTokens = async (): Promise<string[]> => {
 
 export const findUsersToNotifyForGiveaway = async (
   giveaway: Giveaway): Promise<User[]> => {
-  let query: firestore.Query = usersCollection;
+  let query: FirebaseFirestore.Query = usersCollection;
 
   const platforms = giveaway.platforms.split(", ");
   if (platforms.length > 0) {
@@ -32,5 +33,5 @@ export const findUsersToNotifyForGiveaway = async (
   }
 
   const snapshot = await query.get();
-  return snapshot.docs.map((doc) => doc.data() as User);
+  return snapshot.docs.map((doc: QueryDocumentSnapshot) => doc.data() as User);
 };

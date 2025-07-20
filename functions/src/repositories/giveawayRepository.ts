@@ -1,8 +1,8 @@
 
-import {firestore} from "firebase-admin";
+import {getFirestore} from "../config/firebase";
 import {Giveaway} from "../models/giveaway";
 
-const db = firestore();
+const db = getFirestore();
 const giveawaysCollection = db.collection("giveaways");
 
 export const getExistingIds = async (

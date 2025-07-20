@@ -1,10 +1,8 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {getFirestore} from "../config/firebase";
 
-admin.initializeApp();
-
-const db = admin.firestore();
+const db = getFirestore();
 
 export const updatePreferences = onCall(async (request) => {
   if (!request.auth) {
